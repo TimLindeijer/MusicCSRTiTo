@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
+// Define the type for the data you expect to receive
+interface ApiResponse {
+  message: string;
+}
+
 function App() {
-  const [data, setData] = useState(null);
+  // Define the state type as string or null
+  const [data, setData] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/data');
+        const response = await axios.get<ApiResponse>('http://localhost:8000/api/data');
         setData(response.data.message);
       } catch (error) {
         console.error("Error fetching data: ", error);
