@@ -9,6 +9,9 @@ __pycache__/
 # Ignore agent dialogues
 dialogue_export/
 
+# Node modules
+node_module/
+
 # Distribution / packaging
 .Python
 build/
