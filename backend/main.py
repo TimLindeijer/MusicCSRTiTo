@@ -1,31 +1,49 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+import socketio
 
+# Initialize the FastAPI app
 app = FastAPI()
 
-# Allow CORS for React frontend
-origins = ["http://localhost:3000"]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+# Create a Socket.IO server with CORS settings
+sio = socketio.AsyncServer(
+    cors_allowed_origins=["http://localhost:3000"],  # Allow connections from this origin
+    async_mode="asgi"  # Use ASGI for compatibility with FastAPI
 )
 
-@app.get("/", response_class=HTMLResponse)
+# Mount the Socket.IO app at the specified path
+app.mount("/socket.io", socketio.ASGIApp(sio))
+
+# Add CORS middleware to the FastAPI app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Allow the frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
+# Example event handler for a connection
+@sio.event
+async def connect(sid, environ):
+    print(f"Client connected: {sid}")
+
+# Example event handler for messages
+@sio.event
+async def message(sid, data):
+    print(f"Message from {sid}: {data}")
+    # Echo the message back to the client
+    await sio.send(sid, f"Echo: {data}")
+
+# Example event handler for disconnection
+@sio.event
+async def disconnect(sid):
+    print(f"Client disconnected: {sid}")
+
+# A sample HTTP endpoint for testing
+@app.get("/")
 async def read_root():
-    return "<h1>Welcome to FastAPI!</h1>"
+    return {"message": "Welcome to the FastAPI Socket.IO server!"}
 
-@app.get("/api/data")
-async def get_data():
-    return {"message": "Hello from FastAPI!"}
-
-# Using a simple Python HTTP server to run the app
-if __name__ == "__main__":
-    import os
-    import subprocess
-
-    # Use a subprocess to run the FastAPI application
-    subprocess.run(["python", "-m", "http.server", "8000"])
+# To run the FastAPI app, use the command:
+# uvicorn main:app --host 127.0.0.1 --port 5000 --reload

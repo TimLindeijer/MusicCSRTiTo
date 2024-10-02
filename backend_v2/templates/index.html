@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Conversational Recommender System</title>
+    <script src="https://cdn.jsdelivr.net/npm/iaigroup-chatwidget@latest/build/bundle.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        #chatWidgetContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            /* Adjust width as needed */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Welcome to Music Conversational Recommender System</h1>
+    <div id="chatWidgetContainer" data-name="Chatbot" data-server-url="http://127.0.0.1:8000"
+        data-socketio-path="/socket.io/" data-use-feedback data-use-login></div>
+
+<script>
+    // Initialize the chat widget
+    ChatWidget({
+        name: "Chatbot",
+        serverUrl: "http://127.0.0.1:8000",
+        useFeedback: true,
+        useLogin: true,
+    }, "chatWidgetContainer");
+
+    // Establish Socket.IO connection
+    const socket = io("http://127.0.0.1:8000");
+
+    // Listen for chat responses
+    // socket.on('chat response', function (response) {
+    //     console.log("Response from server:", response); // Log the server's response
+    // });
+
+    // // Override the default form submission behavior
+    // const chatContainer = document.getElementById("chatWidgetContainer");
+
+    // // Listen for the chat input's form submit event
+    // chatContainer.addEventListener('submit', function (event) {
+    //     event.preventDefault(); // Prevent default form submission
+
+    //     // Access the input field using querySelector
+    //     const messageInput = chatContainer.querySelector("input[type='text']");
+    //     const message = messageInput.value;
+    //     socket.emit('chat message', message); // Send the message to the server
+
+
+    //     // Check if the message is not empty
+    //     if (message.trim()) {
+    //         console.log("Sending message to server:", message);
+    //         socket.emit('chat message', message); // Send the message to the server
+    //         messageInput.value = ''; // Clear the input field after sending
+    //     }
+    // });
+
+    // Optional: Log when the socket connects
+    socket.on('connect', function () {
+        console.log("Connected to the Socket.IO server");
+    });
+    socket.emit('chat message', "Yo"); // Send the message to the server
+
+</script>
+</body>
+
+</html>
