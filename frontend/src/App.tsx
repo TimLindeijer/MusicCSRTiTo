@@ -1,34 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useContext } from "react";
+import { ConfigContext } from "./contexts/ConfigContext";
+import { UserContext } from "./contexts/UserContext";
+import ChatBox from "./components/ChatBox/ChatBox";
+import LoginForm from "./components/LoginForm/LoginForm";
+import ChatWidget from "./components/Widget/ChatWidget";
+import ChatEmbedded from "./components/Embedded/ChatEmbedded";
 
-// Define the type for the data you expect to receive
-interface ApiResponse {
-  message: string;
-}
+export default function App() {
+  const { config } = useContext(ConfigContext);
+  const { user } = useContext(UserContext);
 
-function App() {
-  // Define the state type as string or null
-  const [data, setData] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get<ApiResponse>('http://localhost:8000/api/data');
-        setData(response.data.message);
-      } catch (error) {
-        console.error("Error fetching data: ", error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  return (
-    <div>
-      <h1>React with FastAPI</h1>
-      <p>{data ? data : 'Loading...'}</p>
-    </div>
+  const content = !user && config.useLogin ? <LoginForm /> : <ChatBox />;
+  return config.useWidget ? (
+    <ChatWidget>{content}</ChatWidget>
+  ) : (
+    <ChatEmbedded>{content}</ChatEmbedded>
   );
 }
-
-export default App;

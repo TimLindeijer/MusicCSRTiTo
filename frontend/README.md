@@ -1,46 +1,108 @@
-# Getting Started with Create React App
+# Chat Widget
+
+[![npm version](https://img.shields.io/npm/v/iaigroup-chatwidget?style=flat)](https://www.npmjs.com/package/iaigroup-chatwidget)
+
+## About
+
+This is a simple chat widget that can be embedded into any website. It is built with React and uses [Socket.io](https://socket.io/) for communication with the server.
+
+## Usage
+
+To use this widget, you need to have a server running. You can find instructions on how to set up the server [here](../README.md).
+Add the following code to your website:
+
+```html
+<script
+  type="text/javascript"
+  src="https://cdn.jsdelivr.net/npm/iaigroup-chatwidget@latest/build/bundle.min.js"
+></script>
+```
+
+The widget can be initialized in one of two ways:
+
+  * Add the following div to your website:
+  `<div id="chatWidgetContainer"></div>`
+  * Add the following script to your website:
+  `<script>ChatWidget()</script>`
+
+There is configuration associated with the widget. You can pass it to the `ChatWidget` function as an object or to the `div` element as attributes.
+
+| Attribute           | Description             | Default value                 |
+| ------------------- | ----------------------- | -----------------------       |
+| `data-name`         | Name of the chat bot    | `Chatbot`                     |
+| `data-server-url`   | URL of the server       | `http://127.0.0.1:5000`  |
+| `data-socketio-path`   | Path on the server       | `/socket.io/`  |
+| `data-use-feedback` | Whether to use feedback | false                         |
+| `data-use-login`    | Whether to login users  | false
+| `data-use-widget`    | Whether to use widget version  | false                        |
+
+Example usage:
+
+```html
+<div
+  id="chatWidgetContainer"
+  data-name="Chatbot"
+  data-server-url="http://127.0.0.1:5000"
+  data-use-feedback
+  data-use-login
+></div>
+```
+
+```html
+<script>
+  ChatWidget({
+    name: "Chatbot",
+    serverUrl: "http://127.0.0.1:5000",
+    useFeedback: true,
+    useLogin: true,
+  }, "customContainerId");
+</script>
+```
+
+After initialization, the widget can be opened by clicking on the button in the bottom right corner of the screen.
+
+## Development
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Available Scripts
+### Available Scripts
 
-In the project directory, you can run:
+To install all necessary packages, run the following command:
 
-### `npm start`
+```bash
+npm install
+```
 
-Runs the app in the development mode.\
+This should generate `node_modules` folder.
+
+To run the app in the development mode, use the following command:
+
+```bash
+npm start
+```
+
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
 
-### `npm test`
+```bash
+npm test
+```
 
 Launches the test runner in the interactive watch mode.\
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### `npm run build`
+```bash
+npm run build
+```
 
 Builds the app for production to the `build` folder.\
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
+The build is minified, and the filenames include the hashes.\
 Your app is ready to be deployed!
 
+**NB! Remember to change the path to the compiled files you just built in the `index.html` file.**
+
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
