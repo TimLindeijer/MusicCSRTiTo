@@ -31,7 +31,6 @@ class MusicCRSAgent(Agent):
     def receive_utterance(self, utterance: Utterance) -> None:
         """Handles user commands to manage the playlist."""
         user_input = utterance.text.lower()
-        logger.info(f"utterance received {utterance}")
         
 
         if "add" in user_input:
@@ -44,8 +43,10 @@ class MusicCRSAgent(Agent):
             if song in self.playlist:
                 self.playlist.remove(song)
                 response = f"Removed '{song}' from your playlist."
+            else:
+                response = f"Song does not exist in your playlist."
         elif "list" in user_input:
-            response = "'"+"', '".join(self.playlist)+ "'"
+            response = "'"+"' | '".join(self.playlist)+ "'"
 
         else:
             response = f"Message not understood."
