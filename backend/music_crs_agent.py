@@ -63,9 +63,22 @@ class MusicCRSAgent(Agent):
             response = "'" + "' | '".join(self.playlist) + "'"
 
         elif "when was album" in user_input:
-            album_name = user_input.split("when was album")[-1].strip()
-            year = self.get_album_release_year(album_name)  
+            # Extract the relevant part of the user input
+            album_info = user_input.split("when was album")[-1].strip()
+            
+            # Split to get album name and artist name
+            parts = album_info.split("by")
+            if len(parts) == 2:
+                album_name = parts[0].strip()
+                artist_name = parts[1].strip()  # Capture the artist name
+            else:
+                album_name = album_info  # Fallback if "by" is not provided
+                artist_name = None  # No artist specified
+
+            # Get the release year, potentially passing the artist name
+            year = self.get_album_release_year(album_name, artist_name)  
             response = year
+
 
         elif "how many albums has artist" in user_input:
             artist_name = user_input.split("how many albums has artist")[-1].strip()
@@ -92,14 +105,21 @@ class MusicCRSAgent(Agent):
         )
         self._dialogue_connector.register_agent_utterance(response)
     
-    def get_album_release_year(self, album_name):
-        """Get the release year of an album from Spotify."""
-        results = self.sp.search(q=album_name, type='album', limit=1)
+    def get_album_release_year(self, album_name, artist_name=None):
+        """Get the release year of an album from Discogs."""
+        # Search with or without the artist name
+        if artist_name:
+            search_query = f"{album_name} by {artist_name}"  # Combine album and artist for search
+        else:
+            search_query = album_name
+
+        results = self.sp.search(search_query, type='album')  # Adjusting to use Spotipy
         if results['albums']['items']:
-            album = results['albums']['items'][0]
-            release_year = album['release_date'].split('-')[0]  # Extract year
-            return f"Release year for the album '{album['name']}' is {release_year}."
+            release = results['albums']['items'][0]  # Get the first result
+            return f"Release year for the album '{release['name']}' is {release['release_date'][:4]}"
+        
         return "Release year not found."
+
 
     def fetch_artist(self, artist_name):
         """Fetch the artist object from Spotify."""
