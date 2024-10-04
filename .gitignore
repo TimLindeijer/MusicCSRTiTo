@@ -12,6 +12,10 @@ dialogue_export/
 # Node modules
 node_module/
 
+# API tokens
+config.py
+
+
 # Distribution / packaging
 .Python
 build/
