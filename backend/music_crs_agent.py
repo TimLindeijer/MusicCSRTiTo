@@ -22,7 +22,12 @@ class MusicCRSAgent(Agent):
     def welcome(self) -> None:
         """Sends the agent's welcome message."""
         utterance = AnnotatedUtterance(
-            "Hello! I'm MusicCRS. You can add, remove, view, or clear songs from your playlist. What would you like to do?",
+            """ Hello! I'm MusicCRS. 
+                You can add, remove, or view your playlist.
+                You can also see when an album was released, an artists discography
+                as well as which album a song is.
+                If you wonder how to perform any of these function, type: 'help'.
+                What would you like to do?""",
             participant=DialogueParticipant.AGENT,
         )
         self._dialogue_connector.register_agent_utterance(utterance)
@@ -96,6 +101,16 @@ class MusicCRSAgent(Agent):
 
             album_info = self.find_album_for_song(song_name, artist_name)  
             response = album_info
+        elif "help" in user_input:
+            response = """
+                    These are the chat manuals:
+                    To add a song to playlist type: 'add <song>'.
+                    To remove a a song to playlist type: 'remove <song>'.
+                    To view your playlist type: 'list'.
+                    To figure out when an album was released type: 'when was album <album> (optional) by <artist>'.
+                    To figure out the discography of an artist type: 'how many albums has artist <artist>'.
+                    To figure out which album a song is featured in type: 'which album features song <album> (optional) by <artist>'.
+                    """
         else:
             response = "Message not understood."
         
