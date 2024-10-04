@@ -44,18 +44,20 @@ class MusicCRSAgent(Agent):
             search_results = self.sp.search(q=song, type='track', limit=1)
             if search_results['tracks']['items']:
                 track = search_results['tracks']['items'][0]
-                self.playlist.append(track['name'])
+                cleaned_title = search_results['tracks']['items'][0]['name'].lower()  # Convert to lowercase
+                self.playlist.append(cleaned_title)
                 response = f"Added '{track['name']}' by {track['artists'][0]['name']} to your playlist."
             else:
                 response = "Did not find the song on Spotify."
         
         elif "remove" in user_input:
-            song = user_input.split("remove")[-1].strip()
+            song = user_input.split("remove")[-1].strip() 
             if song in self.playlist:
                 self.playlist.remove(song)
                 response = f"Removed '{song}' from your playlist."
             else:
-                response = "Song does not exist in your playlist."
+                response = f"Song '{song}' does not exist in your playlist."
+
 
         elif "list" in user_input:
             response = "'" + "' | '".join(self.playlist) + "'"
