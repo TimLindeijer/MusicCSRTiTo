@@ -101,16 +101,49 @@ class MusicCRSAgent(Agent):
 
             album_info = self.find_album_for_song(song_name, artist_name)  
             response = album_info
+        
+        elif "how many tracks does album" in user_input:
+            album_info = user_input.split("how many tracks does album")[-1].strip()
+
+            # Check if the user provided an artist name
+            if "by" in album_info:
+                album_name, artist_name = album_info.split("by", 1)
+                album_name = album_name.strip()
+                artist_name = artist_name.strip()
+            else:
+                album_name = album_info
+                artist_name = None  # No artist specified
+
+            track_count = self.get_album_track_count(album_name, artist_name)
+            response = track_count
+
+
+        elif "what are the top 3 tracks of artist" in user_input:
+            artist_name = user_input.split("what are the top 3 tracks of artist")[-1].strip()
+            top_tracks = self.get_top_tracks(artist_name, 3)
+            response = top_tracks
+
+        elif "how many followers does artist" in user_input:
+            artist_name = user_input.split("how many followers does artist")[-1].strip()
+            followers = self.get_artist_followers(artist_name)
+            response = followers
+
+
         elif "help" in user_input:
             response = """
-                    These are the chat manuals:
-                    To add a song to playlist type: 'add <song>'.
-                    To remove a a song to playlist type: 'remove <song>'.
-                    To view your playlist type: 'list'.
-                    To figure out when an album was released type: 'when was album <album> (optional) by <artist>'.
-                    To figure out the discography of an artist type: 'how many albums has artist <artist>'.
-                    To figure out which album a song is featured in type: 'which album features song <album> (optional) by <artist>'.
-                    """
+                These are the chat manuals:
+                To add a song to playlist type: 'add <song>'.
+                To remove a song from playlist type: 'remove <song>'.
+                To view your playlist type: 'list'.
+                To find when an album was released type: 'when was album <album> (optional) by <artist>'.
+                To count the albums of an artist type: 'how many albums has artist <artist>'.
+                To find which album a song is featured in type: 'which album features song <song> (optional) by <artist>'.
+                To count tracks in an album type: 'how many tracks does album <album> (optional) by <artist>'.
+                To find the top tracks of an artist type: 'what are the top 3 tracks of artist <artist>'.
+                To find how many followers an artist has type: 'how many followers does artist <artist>'.
+            """
+
+
         else:
             response = "Message not understood."
         
@@ -192,3 +225,38 @@ class MusicCRSAgent(Agent):
             album_artist = track['album']['artists'][0]['name']  # Get the album artist
             return f"The song '{song_name}' is featured in the album '{album_name}' by {album_artist}."
         return "Song not found."
+
+    def get_album_track_count(self, album_name, artist_name=None):
+        """Get the number of tracks in an album, optionally filtering by artist."""
+        query = f"album:{album_name}"
+        if artist_name:
+            query += f" artist:{artist_name}"
+
+        results = self.sp.search(q=query, type='album', limit=1)
+        
+        if results['albums']['items']:
+            album = results['albums']['items'][0]
+            total_tracks = album['total_tracks']
+            album_title = album['name']
+            artist = album['artists'][0]['name']  # Get the artist of the album
+            return f"The album '{album_title}' by {artist} has {total_tracks} tracks."
+        
+        return "Album not found."
+
+
+    def get_top_tracks(self, artist_name, limit=3):
+        """Get the top tracks of an artist."""
+        artist = self.fetch_artist(artist_name)
+        if artist:
+            top_tracks = self.sp.artist_top_tracks(artist['id'], country='US')
+            track_list = [track['name'] for track in top_tracks['tracks'][:limit]]
+            return f"Top {limit} tracks of {artist_name}: {', '.join(track_list)}."
+        return f"Artist '{artist_name}' not found."
+
+    def get_artist_followers(self, artist_name):
+        """Get the number of followers of an artist."""
+        artist = self.fetch_artist(artist_name)
+        if artist:
+            followers = artist['followers']['total']
+            return f"Artist '{artist_name}' has {followers} followers."
+        return f"Artist '{artist_name}' not found."
