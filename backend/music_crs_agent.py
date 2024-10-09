@@ -15,6 +15,7 @@ class MusicCRSAgent(Agent):
     def __init__(self, id: str):
         super().__init__(id)
         self.playlist = []
+        self.used_features = set()  # Track used features
 
         client_credentials_manager = SpotifyClientCredentials(client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET)
         self.sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
@@ -22,17 +23,16 @@ class MusicCRSAgent(Agent):
     def welcome(self) -> None:
         """Sends the agent's welcome message."""
         utterance = AnnotatedUtterance(
-            """ Hello! I'm MusicCRS. 
-                You can add, remove, or view your playlist.
-                You can also see when an album was released, an artists discography
-                as well as which album a song is.
-                If you wonder how to perform any of these function, type: 'help'.
-                What would you like to do?""",
+            """Hello! I'm MusicCRS.
+               You can add, remove, or view your playlist. You can also see when an album was released, an artist's discography, or which album a song is from.
+               If you wonder how to perform any of these functions, type: 'help'.
+               What would you like to do?""",
             participant=DialogueParticipant.AGENT,
         )
         self._dialogue_connector.register_agent_utterance(utterance)
 
     def goodbye(self) -> None:
+        """Sends a goodbye message."""
         utterance = AnnotatedUtterance(
             "It was nice talking to you. Bye!",
             dialogue_acts=[DialogueAct(intent=self.stop_intent)],
@@ -43,64 +43,37 @@ class MusicCRSAgent(Agent):
     def receive_utterance(self, utterance: Utterance) -> None:
         """Handles user commands to manage the playlist."""
         user_input = utterance.text.lower()
-        
-        if "add" in user_input:
-            song = user_input.split("add")[-1].strip()
-            search_results = self.sp.search(q=song, type='track', limit=1)
-            if search_results['tracks']['items']:
-                track = search_results['tracks']['items'][0]
-                cleaned_title = search_results['tracks']['items'][0]['name'].lower()  # Convert to lowercase
-                self.playlist.append(cleaned_title)
-                response = f"Added '{track['name']}' by {track['artists'][0]['name']} to your playlist."
-            else:
-                response = "Did not find the song on Spotify."
-        
-        elif "remove" in user_input:
-            song = user_input.split("remove")[-1].strip() 
-            if song in self.playlist:
-                self.playlist.remove(song)
-                response = f"Removed '{song}' from your playlist."
-            else:
-                response = f"Song '{song}' does not exist in your playlist."
+        response = None
 
+        # Feature detection logic
+        if "add" in user_input:
+            self.used_features.add("add")
+            song = user_input.split("add")[-1].strip()
+            response = self.handle_add_song(song)
+
+        elif "remove" in user_input:
+            self.used_features.add("remove")
+            song = user_input.split("remove")[-1].strip()
+            response = self.handle_remove_song(song)
 
         elif "list" in user_input:
-            response = "'" + "' | '".join(self.playlist) + "'"
+            self.used_features.add("list")
+            response = self.handle_list_playlist()
 
         elif "when was album" in user_input:
-            # Extract the relevant part of the user input
+            self.used_features.add("album_release")
             album_info = user_input.split("when was album")[-1].strip()
-            
-            # Split to get album name and artist name
-            parts = album_info.split("by")
-            if len(parts) == 2:
-                album_name = parts[0].strip()
-                artist_name = parts[1].strip()  # Capture the artist name
-            else:
-                album_name = album_info  # Fallback if "by" is not provided
-                artist_name = None  # No artist specified
-
-            # Get the release year, potentially passing the artist name
-            year = self.get_album_release_year(album_name, artist_name)  
-            response = year
-
+            response = self.handle_album_release_year(album_info)
 
         elif "how many albums has artist" in user_input:
+            self.used_features.add("artist_discography")
             artist_name = user_input.split("how many albums has artist")[-1].strip()
-            response = self.count_artist_discography(artist_name)  
+            response = self.handle_artist_discography(artist_name)
 
         elif "which album features song" in user_input:
+            self.used_features.add("album_for_song")
             song_info = user_input.split("which album features song")[-1].strip()
-            if "by" in song_info:
-                song_name, artist_name = song_info.split("by", 1)
-                song_name = song_name.strip()
-                artist_name = artist_name.strip()
-            else:
-                song_name = song_info
-                artist_name = None  # No artist provided
-
-            album_info = self.find_album_for_song(song_name, artist_name)  
-            response = album_info
+            response = self.handle_album_for_song(song_info)
         
         elif "how many tracks does album" in user_input:
             album_info = user_input.split("how many tracks does album")[-1].strip()
@@ -128,30 +101,90 @@ class MusicCRSAgent(Agent):
             followers = self.get_artist_followers(artist_name)
             response = followers
 
-
         elif "help" in user_input:
-            response = """
-                These are the chat manuals:
-                To add a song to playlist type: 'add <song>'.
-                To remove a song from playlist type: 'remove <song>'.
-                To view your playlist type: 'list'.
-                To find when an album was released type: 'when was album <album> (optional) by <artist>'.
-                To count the albums of an artist type: 'how many albums has artist <artist>'.
-                To find which album a song is featured in type: 'which album features song <song> (optional) by <artist>'.
-                To count tracks in an album type: 'how many tracks does album <album> (optional) by <artist>'.
-                To find the top tracks of an artist type: 'what are the top 3 tracks of artist <artist>'.
-                To find how many followers an artist has type: 'how many followers does artist <artist>'.
-            """
-
+            self.used_features.add("help")
+            response = self.handle_help()
 
         else:
             response = "Message not understood."
-        
+
+        # Suggest additional features dynamically
+        response += self.suggest_unused_features()
+
         response = AnnotatedUtterance(
             "(MusicCRS) " + response,
             participant=DialogueParticipant.AGENT,
         )
         self._dialogue_connector.register_agent_utterance(response)
+
+    def handle_add_song(self, song: str) -> str:
+        search_results = self.sp.search(q=song, type='track', limit=1)
+        if search_results['tracks']['items']:
+            track = search_results['tracks']['items'][0]
+            cleaned_title = track['name'].lower()
+            self.playlist.append(cleaned_title)
+            return f"Added '{track['name']}' by {track['artists'][0]['name']} to your playlist.\n" + self.suggest_song_questions(cleaned_title)
+        return "Did not find the song on Spotify."
+
+    def handle_remove_song(self, song: str) -> str:
+        if song in self.playlist:
+            self.playlist.remove(song)
+            return f"Removed '{song}' from your playlist."
+        return f"Song '{song}' does not exist in your playlist."
+
+    def handle_list_playlist(self) -> str:
+        return "'" + "' | '".join(self.playlist) + "'"
+
+    def handle_album_release_year(self, album_info: str) -> str:
+        parts = album_info.split("by")
+        album_name = parts[0].strip()
+        artist_name = parts[1].strip() if len(parts) == 2 else None
+        return self.get_album_release_year(album_name, artist_name)
+
+    def handle_artist_discography(self, artist_name: str) -> str:
+        return self.count_artist_discography(artist_name)
+
+    def handle_album_for_song(self, song_info: str) -> str:
+        parts = song_info.split("by")
+        song_name = parts[0].strip()
+        artist_name = parts[1].strip() if len(parts) == 2 else None
+        return self.find_album_for_song(song_name, artist_name)
+
+    def handle_help(self) -> str:
+        return """
+            These are the chat manuals:
+            To add a song to the playlist type: 'add <song>'.
+            To remove a song from the playlist type: 'remove <song>'.
+            To view your playlist type: 'list'.
+            To find when an album was released type: 'when was album <album> (optional) by <artist>'.
+            To count the albums of an artist type: 'how many albums has artist <artist>'.
+            To find which album a song is featured in type: 'which album features song <song> (optional) by <artist>'.
+            To count tracks in an album type: 'how many tracks does album <album> (optional) by <artist>'.
+            To find the top tracks of an artist type: 'what are the top 3 tracks of artist <artist>'.
+            To find how many followers an artist has type: 'how many followers does artist <artist>'.
+        """
+
+    def suggest_song_questions(self, song_name: str) -> str:
+        """Suggest questions the user can ask about a song they added."""
+        return f"Would you like to know which album '{song_name}' is from or the artist's discography?"
+
+    def suggest_unused_features(self) -> str:
+        """Suggest unused features in a non-intrusive manner."""
+        all_features = {
+            "add": "You can add songs to your playlist by typing 'add <song>'.",
+            "remove": "You can remove songs by typing 'remove <song>'.",
+            "list": "You can view your playlist by typing 'list'.",
+            "album_release": "To find when an album was released, type 'when was album <album> by <artist>'.",
+            "artist_discography": "To count the albums of an artist, type 'how many albums has artist <artist>'.",
+            "album_for_song": "To find which album features a song, type 'which album features song <song> by <artist>'."
+        }
+
+        unused_features = set(all_features.keys()) - self.used_features
+        if unused_features:
+            return "\nYou might also like to try: " + " | ".join([all_features[feature] for feature in unused_features])
+
+        return ""
+
     
     def get_album_release_year(self, album_name, artist_name=None):
         """Get the release year of an album from Discogs."""
