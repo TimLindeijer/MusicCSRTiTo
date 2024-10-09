@@ -6,8 +6,19 @@ __pycache__/
 # C extensions
 *.so
 
+# Ingen dabbing
+*.db
+*.h5
+
 # Ignore agent dialogues
 dialogue_export/
+
+# Node modules
+node_module/
+
+# API tokens
+config.py
+
 
 # Distribution / packaging
 .Python
